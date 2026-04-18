@@ -7,6 +7,7 @@ from app import models
 from app.api.routes_events import router as events_router
 from app.api.routes_jobs import router as jobs_router
 from app.api.routes_logs import router as logs_router
+from app.api.routes_users import router as users_router
 from app.config import settings
 from app.db import Base, engine
 
@@ -24,6 +25,7 @@ app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 app.include_router(events_router)
 app.include_router(jobs_router)
 app.include_router(logs_router)
+app.include_router(users_router)
 
 
 @app.get("/health")

@@ -1,8 +1,12 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export default function LoginPage() {
+  const handleGoogleLogin = () => {
+    window.location.href = `${BACKEND_URL}/auth/google/login`;
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#E8D8C4] text-[#561C24]">
       <div className="rounded-2xl bg-[#C7B7A3] p-10 shadow-lg text-center max-w-md w-full">
@@ -12,7 +16,7 @@ export default function LoginPage() {
         </p>
 
         <button
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={handleGoogleLogin}
           className="mt-8 w-full rounded-xl bg-[#561C24] px-6 py-3 text-[#E8D8C4] font-semibold hover:bg-[#6D2932] transition"
         >
           Sign in with Google
