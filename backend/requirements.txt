@@ -2,6 +2,8 @@ alembic==1.18.4
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
+Authlib==1.7.0
+certifi==2026.2.25
 cffi==2.0.0
 click==8.3.2
 cryptography==46.0.7
@@ -10,7 +12,11 @@ ecdsa==0.19.2
 email-validator==2.3.0
 fastapi==0.135.3
 h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
 idna==3.11
+itsdangerous==2.2.0
+joserfc==1.6.4
 Mako==1.3.10
 MarkupSafe==3.0.3
 psycopg2-binary==2.9.11
