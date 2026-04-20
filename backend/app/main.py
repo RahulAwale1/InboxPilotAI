@@ -9,7 +9,9 @@ from app.api.routes_jobs import router as jobs_router
 from app.api.routes_logs import router as logs_router
 from app.api.routes_users import router as users_router
 from app.api.routes_auth import router as auth_router
+from app.api.routes_sync import router as sync_router
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import Base, engine
 
@@ -29,11 +31,20 @@ app.add_middleware(
     secret_key=settings.SESSION_SECRET_KEY,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(events_router)
 app.include_router(jobs_router)
 app.include_router(logs_router)
 app.include_router(users_router)
 app.include_router(auth_router)
+app.include_router(sync_router)
 
 
 @app.get("/health")

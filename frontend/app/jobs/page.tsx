@@ -1,8 +1,47 @@
-import Layout from "@/components/Layout";
-import { fetchJobs } from "@/lib/api";
+"use client";
 
-export default async function JobsPage() {
-  const jobs = await fetchJobs();
+import Layout from "@/components/Layout";
+import { fetchJobs, fetchMe } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type JobItem = {
+  id: number;
+  company: string;
+  job_title: string;
+  status: string;
+  last_updated: string;
+};
+
+export default function JobsPage() {
+  const router = useRouter();
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        await fetchMe();
+        const data = await fetchJobs();
+        setJobs(data);
+      } catch (err) {
+        console.error(err);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <p className="text-lg">Loading jobs...</p>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -25,7 +64,7 @@ export default async function JobsPage() {
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job: any) => (
+              {jobs.map((job) => (
                 <tr key={job.id} className="border-b border-[#E8D8C4]">
                   <td className="py-3">{job.company}</td>
                   <td className="py-3">{job.job_title}</td>

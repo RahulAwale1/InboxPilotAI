@@ -1,37 +1,43 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
-export async function fetchEvents() {
-  const response = await fetch(`${API_BASE_URL}/events`, {
-    cache: "no-store",
-  });
-
+async function handleResponse(response: Response) {
   if (!response.ok) {
-    throw new Error("Failed to fetch events");
+    const errorText = await response.text();
+    throw new Error(errorText || "Request failed");
   }
 
   return response.json();
+}
+
+export async function fetchMe() {
+  const response = await fetch(`${BACKEND_URL}/auth/me`, {
+    credentials: "include",
+  });
+
+  return handleResponse(response);
+}
+
+export async function fetchEvents() {
+  const response = await fetch(`${BACKEND_URL}/events`, {
+    credentials: "include",
+  });
+
+  return handleResponse(response);
 }
 
 export async function fetchJobs() {
-  const response = await fetch(`${API_BASE_URL}/jobs`, {
-    cache: "no-store",
+  const response = await fetch(`${BACKEND_URL}/jobs`, {
+    credentials: "include",
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch jobs");
-  }
-
-  return response.json();
+  return handleResponse(response);
 }
 
 export async function fetchLogs() {
-  const response = await fetch(`${API_BASE_URL}/logs`, {
-    cache: "no-store",
+  const response = await fetch(`${BACKEND_URL}/logs`, {
+    credentials: "include",
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch logs");
-  }
-
-  return response.json();
+  return handleResponse(response);
 }
