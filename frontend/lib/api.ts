@@ -18,24 +18,63 @@ export async function fetchMe() {
   return handleResponse(response);
 }
 
-export async function fetchEvents() {
-  const response = await fetch(`${BACKEND_URL}/events`, {
+export async function fetchEvents(page = 1, pageSize = 10) {
+  const response = await fetch(
+    `${BACKEND_URL}/events?page=${page}&page_size=${pageSize}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  return handleResponse(response);
+}
+
+export async function fetchJobs(
+  page = 1,
+  pageSize = 10,
+  statusFilter = "",
+  search = ""
+) {
+  const query = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+
+  if (statusFilter) {
+    query.append("status_filter", statusFilter);
+  }
+
+  if (search.trim()) {
+    query.append("search", search.trim());
+  }
+
+  const response = await fetch(`${BACKEND_URL}/jobs?${query.toString()}`, {
     credentials: "include",
   });
 
   return handleResponse(response);
 }
 
-export async function fetchJobs() {
-  const response = await fetch(`${BACKEND_URL}/jobs`, {
-    credentials: "include",
+export async function fetchLogs(
+  page = 1,
+  pageSize = 10,
+  categoryFilter = "",
+  search = ""
+) {
+  const query = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
   });
 
-  return handleResponse(response);
-}
+  if (categoryFilter) {
+    query.append("category_filter", categoryFilter);
+  }
 
-export async function fetchLogs() {
-  const response = await fetch(`${BACKEND_URL}/logs`, {
+  if (search.trim()) {
+    query.append("search", search.trim());
+  }
+
+  const response = await fetch(`${BACKEND_URL}/logs?${query.toString()}`, {
     credentials: "include",
   });
 

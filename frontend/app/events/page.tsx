@@ -1,6 +1,7 @@
 "use client";
 
 import Layout from "@/components/Layout";
+import PaginationControls from "@/components/PaginationControls";
 import { fetchEvents, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,18 +14,26 @@ type EventItem = {
   calendar_event_id?: string | null;
 };
 
+type PaginatedEvents = {
+  items: EventItem[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};
+
 export default function EventsPage() {
   const router = useRouter();
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [eventsData, setEventsData] = useState<PaginatedEvents | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     async function loadData() {
       try {
         await fetchMe();
-        const data = await fetchEvents();
-        setEvents(data);
+        const data = await fetchEvents(page, 10);
+        setEventsData(data);
       } catch (err) {
         console.error(err);
         router.push("/login");
@@ -33,8 +42,9 @@ export default function EventsPage() {
       }
     }
 
+    setLoading(true);
     loadData();
-  }, [router]);
+  }, [router, page]);
 
   if (loading) {
     return (
@@ -43,6 +53,9 @@ export default function EventsPage() {
       </Layout>
     );
   }
+
+  const events = eventsData?.items || [];
+  const totalPages = eventsData?.total_pages || 1;
 
   return (
     <Layout>
@@ -54,12 +67,10 @@ export default function EventsPage() {
           </p>
         </div>
 
-        {error ? (
-          <div className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm">
-            <p>{error}</p>
-          </div>
-        ) : (
-          <div className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm overflow-x-auto">
+        <div className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm overflow-x-auto">
+          {events.length === 0 ? (
+            <p className="text-sm text-[#6D2932]">No events yet.</p>
+          ) : (
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-[#6D2932]">
@@ -80,8 +91,15 @@ export default function EventsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            onPrevious={() => setPage((prev) => Math.max(prev - 1, 1))}
+            onNext={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+          />
+        </div>
       </div>
     </Layout>
   );

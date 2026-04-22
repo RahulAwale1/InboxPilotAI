@@ -7,6 +7,9 @@ import { fetchEvents, fetchJobs, fetchLogs, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge";
+import EmptyState from "@/components/EmptyState";
+import RecentEventCard from "@/components/RecentEventCard";
+import RecentJobCard from "@/components/RecentJobCard";
 
 type EventItem = {
   id: number;
@@ -41,19 +44,27 @@ export default function HomePage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [jobsTotal, setJobsTotal] = useState(0);
+  const [eventsTotal, setEventsTotal] = useState(0);
 
   const loadData = async () => {
     const me = await fetchMe();
-    const [eventsData, jobsData, logsData] = await Promise.all([
-      fetchEvents(),
-      fetchJobs(),
-      fetchLogs(),
+    const [eventsResponse, jobsResponse, logsResponse] = await Promise.all([
+      fetchEvents(1,10),
+      fetchJobs(1,10),
+      fetchLogs(1,10),
     ]);
 
     setUser(me);
-    setEvents(eventsData);
-    setJobs(jobsData);
-    setLogs(logsData);
+    setEvents(eventsResponse.items);
+    setJobs(jobsResponse.items);
+    setLogs(logsResponse.items);
+
+
+    setEventsTotal(eventsResponse.total);
+    setJobsTotal(jobsResponse.total);
+    setLogsTotal(logsResponse.total);
   };
 
   useEffect(() => {
@@ -95,49 +106,63 @@ export default function HomePage() {
             )}
           </div>
 
-          <SyncInboxButton onSyncComplete={loadData} />
+          <div className="w-full md:w-auto">
+            <SyncInboxButton onSyncComplete={loadData} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <SummaryCard title="Events Detected" value={events.length} />
-          <SummaryCard title="Jobs Tracked" value={jobs.length} />
-          <SummaryCard title="Emails Processed" value={logs.length} />
+          <SummaryCard title="Events Detected" value={eventsTotal} />
+          <SummaryCard title="Jobs Tracked" value={jobsTotal} />
+          <SummaryCard title="Emails Processed" value={logsTotal} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">Recent Events</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Recent Events</h2>
+              <span className="text-sm text-[#6D2932]">{events.length} total</span>
+            </div>
+
             <div className="space-y-4">
               {events.length === 0 ? (
-                <p className="text-sm text-[#6D2932]">No events yet.</p>
+                <EmptyState
+                  title="No events yet"
+                  description="When event-related emails are processed, they’ll appear here."
+                />
               ) : (
                 events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="rounded-xl bg-[#E8D8C4] p-4">
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="text-sm text-[#6D2932]">
-                      {event.event_date} {event.event_time ? `• ${event.event_time}` : ""}
-                    </p>
-                  </div>
+                  <RecentEventCard
+                    key={event.id}
+                    title={event.title}
+                    eventDate={event.event_date}
+                    eventTime={event.event_time}
+                  />
                 ))
               )}
             </div>
           </section>
 
           <section className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">Recent Job Updates</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Recent Job Updates</h2>
+              <span className="text-sm text-[#6D2932]">{jobs.length} total</span>
+            </div>
+
             <div className="space-y-4">
               {jobs.length === 0 ? (
-                <p className="text-sm text-[#6D2932]">No jobs tracked yet.</p>
+                <EmptyState
+                  title="No jobs tracked yet"
+                  description="Job-related emails will create or update entries here after syncing."
+                />
               ) : (
                 jobs.slice(0, 3).map((job) => (
-                  <div key={job.id} className="rounded-xl bg-[#E8D8C4] p-4">
-                    <p className="font-semibold">
-                      {job.company} — {job.job_title}
-                    </p>
-                    <div className="mt-2">
-                      <StatusBadge status={job.status} />
-                    </div>
-                  </div>
+                  <RecentJobCard
+                    key={job.id}
+                    company={job.company}
+                    jobTitle={job.job_title}
+                    status={job.status}
+                  />
                 ))
               )}
             </div>
