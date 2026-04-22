@@ -41,3 +41,12 @@ export async function fetchLogs() {
 
   return handleResponse(response);
 }
+
+export async function syncInbox() {
+  const response = await fetch(`${BACKEND_URL}/sync`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  return handleResponse(response);
+}

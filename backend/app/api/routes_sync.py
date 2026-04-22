@@ -11,6 +11,7 @@ from app.services.gmail_service import get_latest_emails
 from app.services.llm_service import analyze_email
 from app.models.job import Job
 from app.models.event import Event
+from app.services.calendar_service import create_calendar_event
 
 router = APIRouter(tags=["sync"])
 
@@ -123,14 +124,28 @@ def sync_inbox(
             time = event_data.get("time")
 
             if title and date:
+                calendar_event_id = None
+
+                try:
+                    calendar_response = create_calendar_event(
+                        access_token=google_token.access_token,
+                        title=title,
+                        event_date=date,
+                        event_time=time,
+                        description=f"Created from email: {email['subject']}",
+                    )
+                    calendar_event_id = calendar_response.get("id")
+                except Exception as e:
+                    print(f"Calendar event creation failed: {e}")
+
                 new_event = Event(
                     user_id=current_user.id,
                     email_log_id=new_log.id,
                     title=title,
                     event_date=date,
                     event_time=time,
-                    description=None,
-                    calendar_event_id=None,
+                    description=f"Created from email: {email['subject']}",
+                    calendar_event_id=calendar_event_id,
                 )
                 db.add(new_event)
 

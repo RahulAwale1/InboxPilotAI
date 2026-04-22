@@ -2,6 +2,7 @@
 
 import Layout from "@/components/Layout";
 import SummaryCard from "@/components/SummaryCard";
+import SyncInboxButton from "@/components/SyncInboxButton";
 import { fetchEvents, fetchJobs, fetchLogs, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,26 +25,40 @@ type LogItem = {
   id: number;
 };
 
+type CurrentUser = {
+  id: number;
+  name: string;
+  email: string;
+  image_url?: string | null;
+};
+
 export default function HomePage() {
   const router = useRouter();
+
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        await fetchMe();
-        const [eventsData, jobsData, logsData] = await Promise.all([
-          fetchEvents(),
-          fetchJobs(),
-          fetchLogs(),
-        ]);
+  const loadData = async () => {
+    const me = await fetchMe();
+    const [eventsData, jobsData, logsData] = await Promise.all([
+      fetchEvents(),
+      fetchJobs(),
+      fetchLogs(),
+    ]);
 
-        setEvents(eventsData);
-        setJobs(jobsData);
-        setLogs(logsData);
+    setUser(me);
+    setEvents(eventsData);
+    setJobs(jobsData);
+    setLogs(logsData);
+  };
+
+  useEffect(() => {
+    async function init() {
+      try {
+        await loadData();
       } catch (err) {
         console.error(err);
         router.push("/login");
@@ -52,7 +67,7 @@ export default function HomePage() {
       }
     }
 
-    loadData();
+    init();
   }, [router]);
 
   if (loading) {
@@ -66,11 +81,20 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-[#6D2932]">
-            Overview of processed emails, detected events, and tracked job applications.
-          </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">Dashboard</h1>
+            <p className="mt-2 text-[#6D2932]">
+              Overview of processed emails, detected events, and tracked job applications.
+            </p>
+            {user && (
+              <p className="mt-2 text-sm text-[#6D2932]">
+                Signed in as <span className="font-semibold">{user.email}</span>
+              </p>
+            )}
+          </div>
+
+          <SyncInboxButton onSyncComplete={loadData} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -83,28 +107,36 @@ export default function HomePage() {
           <section className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm">
             <h2 className="text-2xl font-semibold mb-4">Recent Events</h2>
             <div className="space-y-4">
-              {events.slice(0, 3).map((event) => (
-                <div key={event.id} className="rounded-xl bg-[#E8D8C4] p-4">
-                  <p className="font-semibold">{event.title}</p>
-                  <p className="text-sm text-[#6D2932]">
-                    {event.event_date} {event.event_time ? `• ${event.event_time}` : ""}
-                  </p>
-                </div>
-              ))}
+              {events.length === 0 ? (
+                <p className="text-sm text-[#6D2932]">No events yet.</p>
+              ) : (
+                events.slice(0, 3).map((event) => (
+                  <div key={event.id} className="rounded-xl bg-[#E8D8C4] p-4">
+                    <p className="font-semibold">{event.title}</p>
+                    <p className="text-sm text-[#6D2932]">
+                      {event.event_date} {event.event_time ? `• ${event.event_time}` : ""}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
           <section className="rounded-2xl bg-[#C7B7A3] p-6 shadow-sm">
             <h2 className="text-2xl font-semibold mb-4">Recent Job Updates</h2>
             <div className="space-y-4">
-              {jobs.slice(0, 3).map((job) => (
-                <div key={job.id} className="rounded-xl bg-[#E8D8C4] p-4">
-                  <p className="font-semibold">
-                    {job.company} — {job.job_title}
-                  </p>
-                  <p className="text-sm text-[#6D2932]">{job.status}</p>
-                </div>
-              ))}
+              {jobs.length === 0 ? (
+                <p className="text-sm text-[#6D2932]">No jobs tracked yet.</p>
+              ) : (
+                jobs.slice(0, 3).map((job) => (
+                  <div key={job.id} className="rounded-xl bg-[#E8D8C4] p-4">
+                    <p className="font-semibold">
+                      {job.company} — {job.job_title}
+                    </p>
+                    <p className="text-sm text-[#6D2932]">{job.status}</p>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>
