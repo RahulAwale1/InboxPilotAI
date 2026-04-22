@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { fetchJobs, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import StatusBadge from "@/components/StatusBadge";
 
 type JobItem = {
   id: number;
@@ -68,7 +69,9 @@ export default function JobsPage() {
                 <tr key={job.id} className="border-b border-[#E8D8C4]">
                   <td className="py-3">{job.company}</td>
                   <td className="py-3">{job.job_title}</td>
-                  <td className="py-3">{job.status}</td>
+                  <td className="py-3">
+                    <StatusBadge status={job.status} />
+                  </td>
                   <td className="py-3">
                     {new Date(job.last_updated).toLocaleString()}
                   </td>

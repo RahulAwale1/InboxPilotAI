@@ -6,6 +6,7 @@ import SyncInboxButton from "@/components/SyncInboxButton";
 import { fetchEvents, fetchJobs, fetchLogs, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import StatusBadge from "@/components/StatusBadge";
 
 type EventItem = {
   id: number;
@@ -133,7 +134,9 @@ export default function HomePage() {
                     <p className="font-semibold">
                       {job.company} — {job.job_title}
                     </p>
-                    <p className="text-sm text-[#6D2932]">{job.status}</p>
+                    <div className="mt-2">
+                      <StatusBadge status={job.status} />
+                    </div>
                   </div>
                 ))
               )}

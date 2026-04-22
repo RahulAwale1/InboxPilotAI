@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { fetchLogs, fetchMe } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import CategoryBadge from "@/components/CategoryBadge";
 
 type LogItem = {
   id: number;
@@ -70,7 +71,9 @@ export default function LogsPage() {
                 <tr key={log.id} className="border-b border-[#E8D8C4]">
                   <td className="py-3">{log.sender}</td>
                   <td className="py-3">{log.subject}</td>
-                  <td className="py-3">{log.category}</td>
+                  <td className="py-3">
+                    <CategoryBadge category={log.category} />
+                  </td>
                   <td className="py-3">{log.action_taken || "-"}</td>
                   <td className="py-3">
                     {new Date(log.processed_at).toLocaleString()}

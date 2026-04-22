@@ -12,6 +12,7 @@ from app.services.llm_service import analyze_email
 from app.models.job import Job
 from app.models.event import Event
 from app.services.calendar_service import create_calendar_event
+from app.services.job_service import find_existing_job, merge_job_status
 
 router = APIRouter(tags=["sync"])
 
@@ -95,24 +96,30 @@ def sync_inbox(
             role = job_data.get("role")
             status_value = job_data.get("status")
 
-            existing_job = (
-                db.query(Job)
-                .filter(
-                    Job.user_id == current_user.id,
-                    Job.company == (company or "Unknown"),
-                    Job.job_title == (role or "Unknown Role"),
-                )
-                .first()
+            existing_job = find_existing_job(
+                db=db,
+                user_id=current_user.id,
+                company=company,
+                role=role,
             )
 
             if existing_job:
-                if status_value:
-                    existing_job.status = status_value
+                existing_job.status = merge_job_status(existing_job.status, status_value)
+                existing_job.source_email_id = new_log.id
+
+                if company and existing_job.company in ["Unknown", "Unknown Company"]:
+                    existing_job.company = company
+
+                if role and existing_job.job_title in ["Unknown Role", "Unknown"]:
+                    existing_job.job_title = role
+                    
+                print("JOB DATA:", job_data)
+                print("MATCHED EXISTING JOB:", existing_job.id if existing_job else None)
             else:
                 new_job = Job(
                     user_id=current_user.id,
                     source_email_id=new_log.id,
-                    company=company or "Unknown",
+                    company=company or "Unknown Company",
                     job_title=role or "Unknown Role",
                     status=status_value or "applied",
                 )
