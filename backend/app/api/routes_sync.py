@@ -13,6 +13,9 @@ from app.models.job import Job
 from app.models.event import Event
 from app.services.calendar_service import create_calendar_event
 from app.services.job_service import find_existing_job, merge_job_status
+from app.services.google_api_utils import is_google_auth_error
+from app.services.google_token_service import refresh_google_access_token
+from app.services.event_service import find_existing_event
 
 router = APIRouter(tags=["sync"])
 
@@ -40,10 +43,26 @@ def sync_inbox(
             max_results=10,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch Gmail messages: {str(e)}",
-        )
+        print("INITIAL GMAIL FETCH FAILED:", repr(e))
+        if is_google_auth_error(e):
+            try:
+                new_access_token = refresh_google_access_token(db, google_token)
+                print("REFRESHED ACCESS TOKEN, RETRYING GMAIL FETCH")
+                emails = get_latest_emails(
+                    access_token=new_access_token,
+                    max_results=10,
+                )
+            except Exception as refresh_error:
+                print("REFRESH OR RETRY FAILED:", repr(refresh_error))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to refresh Google token or fetch Gmail messages: {str(refresh_error)}",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to fetch Gmail messages: {str(e)}",
+            )
 
     inserted_count = 0
     skipped_count = 0
@@ -131,30 +150,55 @@ def sync_inbox(
             time = event_data.get("time")
 
             if title and date:
-                calendar_event_id = None
+                existing_event = find_existing_event(
+                    db=db,
+                    user_id=current_user.id,
+                    title=title,
+                    event_date=date,
+                    event_time=time,
+                )
 
-                try:
-                    calendar_response = create_calendar_event(
-                        access_token=google_token.access_token,
+                if existing_event:
+                    print(f"Skipping duplicate event: {title} on {date} {time}")
+                else:
+                    calendar_event_id = None
+
+                    try:
+                        calendar_response = create_calendar_event(
+                            access_token=google_token.access_token,
+                            title=title,
+                            event_date=date,
+                            event_time=time,
+                            description=f"Created from email: {email['subject']}",
+                        )
+                        calendar_event_id = calendar_response.get("id")
+                    except Exception as e:
+                        if is_google_auth_error(e):
+                            try:
+                                new_access_token = refresh_google_access_token(db, google_token)
+                                calendar_response = create_calendar_event(
+                                    access_token=new_access_token,
+                                    title=title,
+                                    event_date=date,
+                                    event_time=time,
+                                    description=f"Created from email: {email['subject']}",
+                                )
+                                calendar_event_id = calendar_response.get("id")
+                            except Exception as refresh_error:
+                                print(f"Calendar event creation failed after token refresh: {refresh_error}")
+                        else:
+                            print(f"Calendar event creation failed: {e}")
+
+                    new_event = Event(
+                        user_id=current_user.id,
+                        email_log_id=new_log.id,
                         title=title,
                         event_date=date,
                         event_time=time,
                         description=f"Created from email: {email['subject']}",
+                        calendar_event_id=calendar_event_id,
                     )
-                    calendar_event_id = calendar_response.get("id")
-                except Exception as e:
-                    print(f"Calendar event creation failed: {e}")
-
-                new_event = Event(
-                    user_id=current_user.id,
-                    email_log_id=new_log.id,
-                    title=title,
-                    event_date=date,
-                    event_time=time,
-                    description=f"Created from email: {email['subject']}",
-                    calendar_event_id=calendar_event_id,
-                )
-                db.add(new_event)
+                    db.add(new_event)
 
         inserted_count += 1
 
