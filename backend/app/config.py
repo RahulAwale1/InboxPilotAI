@@ -22,6 +22,11 @@ class Settings:
     )
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     SESSION_SECRET_KEY: str = os.getenv("SESSION_SECRET_KEY", "dev-session-secret")
+    
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+    COOKIE_SECURE: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    COOKIE_SAMESITE: str = os.getenv("COOKIE_SAMESITE", "lax")
+    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
 
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 

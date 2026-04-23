@@ -100,8 +100,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # set True in production with HTTPS
-        samesite="lax",
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
         max_age=60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES,
         path="/",
     )
