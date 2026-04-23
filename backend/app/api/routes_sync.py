@@ -16,6 +16,7 @@ from app.services.job_service import find_existing_job, merge_job_status
 from app.services.google_api_utils import is_google_auth_error
 from app.services.google_token_service import refresh_google_access_token
 from app.services.event_service import find_existing_event
+from app.services.event_service import find_existing_event, cancel_events_for_job
 
 router = APIRouter(tags=["sync"])
 
@@ -123,7 +124,10 @@ def sync_inbox(
             )
 
             if existing_job:
-                existing_job.status = merge_job_status(existing_job.status, status_value)
+                old_status = existing_job.status
+                new_status = merge_job_status(existing_job.status, status_value)
+
+                existing_job.status = new_status
                 existing_job.source_email_id = new_log.id
 
                 if company and existing_job.company in ["Unknown", "Unknown Company"]:
@@ -131,9 +135,17 @@ def sync_inbox(
 
                 if role and existing_job.job_title in ["Unknown Role", "Unknown"]:
                     existing_job.job_title = role
-                    
-                print("JOB DATA:", job_data)
-                print("MATCHED EXISTING JOB:", existing_job.id if existing_job else None)
+
+                if new_status == "rejected" and old_status != "rejected":
+                    cancelled_count = cancel_events_for_job(
+                        db=db,
+                        user_id=current_user.id,
+                        job_id=existing_job.id,
+                    )
+                    print(f"Cancelled {cancelled_count} event(s) for rejected job {existing_job.id}")
+
+                job_record = existing_job
+
             else:
                 new_job = Job(
                     user_id=current_user.id,
@@ -143,6 +155,8 @@ def sync_inbox(
                     status=status_value or "applied",
                 )
                 db.add(new_job)
+                db.flush()
+                job_record = new_job
 
         if event_data:
             title = event_data.get("title")
@@ -189,14 +203,20 @@ def sync_inbox(
                         else:
                             print(f"Calendar event creation failed: {e}")
 
+                    linked_job_id = None
+                    if category == "job" and 'job_record' in locals():
+                        linked_job_id = job_record.id
+
                     new_event = Event(
                         user_id=current_user.id,
                         email_log_id=new_log.id,
+                        job_id=linked_job_id,
                         title=title,
                         event_date=date,
                         event_time=time,
                         description=f"Created from email: {email['subject']}",
                         calendar_event_id=calendar_event_id,
+                        status="active",
                     )
                     db.add(new_event)
 

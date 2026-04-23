@@ -18,15 +18,25 @@ export async function fetchMe() {
   return handleResponse(response);
 }
 
-export async function fetchEvents(page = 1, pageSize = 10) {
-  const response = await fetch(
-    `${BACKEND_URL}/events?page=${page}&page_size=${pageSize}`,
-    {
-      credentials: "include",
-    }
-  );
+export async function fetchEvents(
+    page = 1,
+    pageSize = 10,
+    statusFilter = ""
+  ) {
+    const query = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
 
-  return handleResponse(response);
+    if (statusFilter) {
+      query.append("status_filter", statusFilter);
+    }
+
+    const response = await fetch(`${BACKEND_URL}/events?${query.toString()}`, {
+      credentials: "include",
+    });
+
+    return handleResponse(response);
 }
 
 export async function fetchJobs(
@@ -84,6 +94,14 @@ export async function fetchLogs(
 export async function syncInbox() {
   const response = await fetch(`${BACKEND_URL}/sync`, {
     method: "POST",
+    credentials: "include",
+  });
+
+  return handleResponse(response);
+}
+
+export async function fetchDigest() {
+  const response = await fetch(`${BACKEND_URL}/digest`, {
     credentials: "include",
   });
 

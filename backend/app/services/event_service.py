@@ -27,3 +27,20 @@ def find_existing_event(
         query = query.filter(Event.event_time.is_(None))
 
     return query.first()
+
+
+def cancel_events_for_job(db: Session, user_id: int, job_id: int) -> int:
+    events = (
+        db.query(Event)
+        .filter(
+            Event.user_id == user_id,
+            Event.job_id == job_id,
+            Event.status == "active",
+        )
+        .all()
+    )
+
+    for event in events:
+        event.status = "cancelled"
+
+    return len(events)

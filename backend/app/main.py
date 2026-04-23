@@ -10,6 +10,7 @@ from app.api.routes_logs import router as logs_router
 from app.api.routes_users import router as users_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_sync import router as sync_router
+from app.api.routes_digest import router as digest_router
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -45,6 +46,7 @@ app.include_router(logs_router)
 app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(sync_router)
+app.include_router(digest_router)
 
 
 @app.get("/health")

@@ -10,12 +10,15 @@ import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import RecentEventCard from "@/components/RecentEventCard";
 import RecentJobCard from "@/components/RecentJobCard";
+import DigestCard from "@/components/DigestCard";
+import { fetchDigest } from "@/lib/api";
 
 type EventItem = {
   id: number;
   title: string;
   event_date: string;
   event_time?: string | null;
+  status: string;
 };
 
 type JobItem = {
@@ -47,6 +50,8 @@ export default function HomePage() {
   const [logsTotal, setLogsTotal] = useState(0);
   const [jobsTotal, setJobsTotal] = useState(0);
   const [eventsTotal, setEventsTotal] = useState(0);
+  const [digest, setDigest] = useState<any>(null);
+  const [digestLoading, setDigestLoading] = useState(false);
 
   const loadData = async () => {
     const me = await fetchMe();
@@ -90,6 +95,18 @@ export default function HomePage() {
     );
   }
 
+  async function loadDigest() {
+    try {
+      setDigestLoading(true);
+      const data = await fetchDigest();
+      setDigest(data);
+    } catch (err) {
+      console.error("Digest failed", err);
+    } finally {
+      setDigestLoading(false);
+    }
+  }
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -110,6 +127,12 @@ export default function HomePage() {
             <SyncInboxButton onSyncComplete={loadData} />
           </div>
         </div>
+
+        <DigestCard
+          digest={digest}
+          loading={digestLoading}
+          onRefresh={loadDigest}
+        />
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <SummaryCard title="Events Detected" value={eventsTotal} />
@@ -137,6 +160,7 @@ export default function HomePage() {
                     title={event.title}
                     eventDate={event.event_date}
                     eventTime={event.event_time}
+                    status={event.status}
                   />
                 ))
               )}

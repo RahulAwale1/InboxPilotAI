@@ -17,16 +17,17 @@ def get_events(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
+    status_filter: str | None = Query(None),
 ):
-    query = (
-        db.query(Event)
-        .filter(Event.user_id == current_user.id)
-        .order_by(Event.created_at.desc())
-    )
+    query = db.query(Event).filter(Event.user_id == current_user.id)
+
+    if status_filter:
+        query = query.filter(Event.status == status_filter)
+
+    query = query.order_by(Event.created_at.desc())
 
     total = query.count()
     offset = (page - 1) * page_size
-
     items = query.offset(offset).limit(page_size).all()
 
     return build_paginated_response(
